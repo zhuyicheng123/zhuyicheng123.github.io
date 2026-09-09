@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useRef, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
 import { ArrowUpRight, Mail, Maximize2, X } from 'lucide-react';
 import {
   Dialog,
@@ -70,10 +70,22 @@ function Screen({
     viewerRef.current?.style.removeProperty('--light-y');
   }
 
+  function prepareViewerOrigin(event: MouseEvent<HTMLButtonElement>) {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const originX = bounds.left + bounds.width / 2 - window.innerWidth / 2;
+    const originY = bounds.top + bounds.height / 2 - window.innerHeight / 2;
+    document.documentElement.style.setProperty('--viewer-origin-x', `${originX}px`);
+    document.documentElement.style.setProperty('--viewer-origin-y', `${originY}px`);
+  }
+
   return (
     <figure className={`screen ${className}`} style={artwork}>
       <Dialog>
-        <DialogTrigger className="screen-trigger" aria-label={`放大查看${shot.title}`}>
+        <DialogTrigger
+          className="screen-trigger"
+          aria-label={`放大查看${shot.title}`}
+          onClick={prepareViewerOrigin}
+        >
           <span className="screen-glass">
             <img
               className="screen-image"
