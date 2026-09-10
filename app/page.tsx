@@ -15,6 +15,55 @@ export const dynamic = 'force-static';
 
 type Screenshot = { title: string; src: string };
 
+function AmbientBackdrop() {
+  const frame = useRef<number | null>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function moveCursor(event: globalThis.PointerEvent) {
+      if (event.pointerType === 'touch' || reducedMotion.matches) return;
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      frame.current = requestAnimationFrame(() => {
+        root.style.setProperty('--ambient-cursor-x', `${event.clientX}px`);
+        root.style.setProperty('--ambient-cursor-y', `${event.clientY}px`);
+        root.style.setProperty('--ambient-cursor-opacity', '1');
+        frame.current = null;
+      });
+    }
+
+    function hideCursor() {
+      root.style.setProperty('--ambient-cursor-opacity', '0');
+    }
+
+    window.addEventListener('pointermove', moveCursor, { passive: true });
+    document.addEventListener('mouseleave', hideCursor);
+
+    return () => {
+      window.removeEventListener('pointermove', moveCursor);
+      document.removeEventListener('mouseleave', hideCursor);
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+      root.style.removeProperty('--ambient-cursor-x');
+      root.style.removeProperty('--ambient-cursor-y');
+      root.style.removeProperty('--ambient-cursor-opacity');
+    };
+  }, []);
+
+  return (
+    <div className="ambient-backdrop" aria-hidden="true">
+      <div className="ambient-base" />
+      <div className="ambient-raster">
+        {Array.from({ length: 32 }, (_, index) => (
+          <span className="ambient-strip" key={index} />
+        ))}
+      </div>
+      <div className="ambient-cursor-glow" />
+      <div className="ambient-vignette" />
+    </div>
+  );
+}
+
 const screens = {
   home: { title: '主界面', src: '/game/home.png' },
   battle: { title: '战斗', src: '/game/battle.png' },
@@ -80,6 +129,7 @@ function Screen({
 
   return (
     <figure className={`screen ${className}`} style={artwork}>
+      <figcaption>{shot.title}</figcaption>
       <Dialog>
         <DialogTrigger
           className="screen-trigger"
@@ -124,7 +174,6 @@ function Screen({
           </div>
         </DialogContent>
       </Dialog>
-      <figcaption>{shot.title}</figcaption>
     </figure>
   );
 }
@@ -132,6 +181,7 @@ function Screen({
 export default function Home() {
   return (
     <div className="showcase">
+      <AmbientBackdrop />
       <a className="skip-link" href="#screenshots">跳转到游戏截图</a>
 
       <header className="masthead">
