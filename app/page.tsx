@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from 'react';
 import { ArrowUpRight, Mail, Maximize2, X } from 'lucide-react';
 import {
   Dialog,
@@ -17,10 +17,26 @@ type Screenshot = { title: string; src: string; width?: number; height?: number 
 
 function AmbientBackdrop() {
   const frame = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stripCount, setStripCount] = useState(48);
+  const [playVideo, setPlayVideo] = useState(false);
+  const backgroundPath = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}/background`;
 
   useEffect(() => {
     const root = document.documentElement;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+    function resizeStrips() {
+      const stripWidth = window.innerWidth >= 734 ? 36 : 24;
+      setStripCount(Math.ceil(window.innerWidth / stripWidth) + 2);
+    }
+
+    function updateMotion() {
+      setPlayVideo(!reducedMotion.matches && !connection?.saveData);
+      if (reducedMotion.matches) hideCursor();
+    }
 
     function moveCursor(event: globalThis.PointerEvent) {
       if (event.pointerType === 'touch' || reducedMotion.matches) return;
@@ -31,18 +47,27 @@ function AmbientBackdrop() {
         root.style.setProperty('--ambient-cursor-opacity', '1');
         frame.current = null;
       });
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(hideCursor, 300);
     }
 
     function hideCursor() {
       root.style.setProperty('--ambient-cursor-opacity', '0');
     }
 
+    resizeStrips();
+    updateMotion();
+    window.addEventListener('resize', resizeStrips, { passive: true });
+    reducedMotion.addEventListener('change', updateMotion);
     window.addEventListener('pointermove', moveCursor, { passive: true });
     document.addEventListener('mouseleave', hideCursor);
 
     return () => {
+      window.removeEventListener('resize', resizeStrips);
+      reducedMotion.removeEventListener('change', updateMotion);
       window.removeEventListener('pointermove', moveCursor);
       document.removeEventListener('mouseleave', hideCursor);
+      clearTimeout(idleTimer);
       if (frame.current !== null) cancelAnimationFrame(frame.current);
       root.style.removeProperty('--ambient-cursor-x');
       root.style.removeProperty('--ambient-cursor-y');
@@ -50,11 +75,38 @@ function AmbientBackdrop() {
     };
   }, []);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!playVideo || !video) return;
+    void video.play().catch(() => setPlayVideo(false));
+    return () => video.pause();
+  }, [playVideo]);
+
   return (
-    <div className="ambient-backdrop" aria-hidden="true">
-      <div className="ambient-base" />
+    <div
+      className="ambient-backdrop"
+      aria-hidden="true"
+      style={{ '--ambient-poster': `url("${backgroundPath}/gradient-poster.jpg")` } as CSSProperties}
+    >
+      <div className="ambient-base">
+        {playVideo && (
+          <video
+            ref={videoRef}
+            className="ambient-video"
+            autoPlay
+            loop
+            muted
+            playsInline
+            preload="metadata"
+            poster={`${backgroundPath}/gradient-poster.jpg`}
+            onError={() => setPlayVideo(false)}
+          >
+            <source src={`${backgroundPath}/gradient-flow.mp4`} type="video/mp4" />
+          </video>
+        )}
+      </div>
       <div className="ambient-raster">
-        {Array.from({ length: 32 }, (_, index) => (
+        {Array.from({ length: stripCount }, (_, index) => (
           <span className="ambient-strip" key={index} />
         ))}
       </div>
@@ -193,61 +245,62 @@ export default function Home() {
       <AmbientBackdrop />
       <a className="skip-link" href="#screenshots">跳转到游戏截图</a>
 
-      <header className="masthead">
-        <h1 className="game-title">{profile.gameTitle}</h1>
-        {profile.email && (
-          <a className="email-link" href={`mailto:${profile.email}`}>
-            <Mail size={17} strokeWidth={1.5} aria-hidden="true" />
-            <span>{profile.email}</span>
-            <ArrowUpRight size={15} aria-hidden="true" />
-          </a>
-        )}
-      </header>
-
       <main id="screenshots">
-        <section className="featured-stage" aria-label="游戏主要界面">
-          <div className="featured-screens">
-            <Screen shot={screens.home} className="featured-screen featured-home" eager />
-            <Screen shot={screens.battle} className="featured-screen featured-battle" eager />
-            <Screen shot={screens.guild} className="featured-screen featured-guild" eager />
-          </div>
-        </section>
-
-        <div className="paired-sections">
-          <section className="gallery-section" aria-labelledby="battle-title">
-            <h2 id="battle-title">关卡与副本</h2>
-            <div className="screen-pair">
-              <Screen shot={screens.boss} />
-              <Screen shot={screens.dungeons} />
-            </div>
-          </section>
-          <section className="gallery-section" aria-labelledby="guild-title">
-            <h2 id="guild-title">公会</h2>
-            <div className="screen-pair">
-              <Screen shot={screens.technology} />
-              <Screen shot={screens.trade} />
-            </div>
-          </section>
-        </div>
-
-        <section className="gallery-section other-section" aria-labelledby="other-title">
-          <h2 id="other-title">其他界面</h2>
-          <div className="other-screens">
-            {[screens.ranking, screens.subscription, screens.mail, screens.reward].map((shot) => (
-              <Screen key={shot.src} shot={shot} />
-            ))}
-          </div>
-        </section>
-
-        <section className="game-section" aria-labelledby="werewolf-title">
+        <section aria-labelledby="werewolf-title">
           <header className="masthead">
-            <h2 className="game-title" id="werewolf-title">狼人杀</h2>
+            <h1 className="game-title" id="werewolf-title">狼人杀</h1>
+            {profile.email && (
+              <a className="email-link" href={`mailto:${profile.email}`}>
+                <Mail size={17} strokeWidth={1.5} aria-hidden="true" />
+                <span>{profile.email}</span>
+                <ArrowUpRight size={15} aria-hidden="true" />
+              </a>
+            )}
           </header>
           <div className="werewolf-screens">
             {werewolfScreens.map((shot) => (
-              <Screen key={shot.src} shot={shot} />
+              <Screen key={shot.src} shot={shot} eager />
             ))}
           </div>
+        </section>
+
+        <section className="game-section" aria-labelledby="restart-title">
+          <header className="masthead">
+            <h2 className="game-title" id="restart-title">{profile.gameTitle}</h2>
+          </header>
+          <section className="featured-stage" aria-label="游戏主要界面">
+            <div className="featured-screens">
+              <Screen shot={screens.home} className="featured-screen featured-home" />
+              <Screen shot={screens.battle} className="featured-screen featured-battle" />
+              <Screen shot={screens.guild} className="featured-screen featured-guild" />
+            </div>
+          </section>
+
+          <div className="paired-sections">
+            <section className="gallery-section" aria-labelledby="battle-title">
+              <h3 id="battle-title">关卡与副本</h3>
+              <div className="screen-pair">
+                <Screen shot={screens.boss} />
+                <Screen shot={screens.dungeons} />
+              </div>
+            </section>
+            <section className="gallery-section" aria-labelledby="guild-title">
+              <h3 id="guild-title">公会</h3>
+              <div className="screen-pair">
+                <Screen shot={screens.technology} />
+                <Screen shot={screens.trade} />
+              </div>
+            </section>
+          </div>
+
+          <section className="gallery-section other-section" aria-labelledby="other-title">
+            <h3 id="other-title">其他界面</h3>
+            <div className="other-screens">
+              {[screens.ranking, screens.subscription, screens.mail, screens.reward].map((shot) => (
+                <Screen key={shot.src} shot={shot} />
+              ))}
+            </div>
+          </section>
         </section>
       </main>
     </div>
