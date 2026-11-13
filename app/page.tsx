@@ -80,8 +80,8 @@ const screens = {
 
 const werewolfScreens: Screenshot[] = [
   { title: '主界面', src: '/game/werewolf-home.jpg', width: 1216, height: 2688 },
-  { title: '对局界面', src: '/game/werewolf-battle.jpg', width: 1216, height: 2688 },
-  { title: '角色选择', src: '/game/werewolf-characters.jpg', width: 1216, height: 2688 },
+  { title: '战斗', src: '/game/werewolf-battle.jpg', width: 1216, height: 2688 },
+  { title: '选角界面', src: '/game/werewolf-characters.jpg', width: 1216, height: 2688 },
 ];
 
 function Screen({
