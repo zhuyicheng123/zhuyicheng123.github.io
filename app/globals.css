@@ -163,6 +163,7 @@ h1 {
 }
 
 .game-title {
+  margin: 0;
   padding-block: 4px 8px;
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Segoe UI', sans-serif;
   font-size: clamp(2.125rem, 4.4vw, 3.75rem);
@@ -259,7 +260,7 @@ main { scroll-margin-top: 20px; }
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 9 / 16;
+  aspect-ratio: var(--screen-ratio, 9 / 16);
   border-radius: 10px;
   background: #101117;
   object-fit: contain;
@@ -328,6 +329,21 @@ main { scroll-margin-top: 20px; }
 .screen-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
 .other-section { margin-top: 56px; }
 .other-screens { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px; }
+
+.game-section {
+  margin-top: 72px;
+  padding-top: 48px;
+  border-top: 1px solid var(--border);
+}
+
+.werewolf-screens {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 24px;
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
 
 [data-slot='dialog-overlay'] {
   background: rgb(4 7 13 / 48%);
@@ -583,6 +599,22 @@ main { scroll-margin-top: 20px; }
   .screen-glass { padding: 6px; border-radius: 14px; }
   .screen-image { border-radius: 8px; }
   .screen figcaption { margin-bottom: 12px; }
+  .game-section { margin-top: 48px; padding-top: 32px; }
+  .werewolf-screens {
+    display: flex;
+    gap: 20px;
+    padding: 12px 24px 4px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 24px;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #52617a transparent;
+  }
+  .werewolf-screens .screen {
+    flex: 0 0 min(70vw, 300px);
+    scroll-snap-align: start;
+  }
 }
 
 @media (max-width: 400px) {

@@ -13,7 +13,7 @@ import { profile } from './profile';
 
 export const dynamic = 'force-static';
 
-type Screenshot = { title: string; src: string };
+type Screenshot = { title: string; src: string; width?: number; height?: number };
 
 function AmbientBackdrop() {
   const frame = useRef<number | null>(null);
@@ -78,6 +78,12 @@ const screens = {
   reward: { title: '奖励弹窗', src: '/game/reward.png' },
 } satisfies Record<string, Screenshot>;
 
+const werewolfScreens: Screenshot[] = [
+  { title: '主界面', src: '/game/werewolf-home.jpg', width: 1216, height: 2688 },
+  { title: '对局界面', src: '/game/werewolf-battle.jpg', width: 1216, height: 2688 },
+  { title: '角色选择', src: '/game/werewolf-characters.jpg', width: 1216, height: 2688 },
+];
+
 function Screen({
   shot,
   className = '',
@@ -90,7 +96,10 @@ function Screen({
   const viewerRef = useRef<HTMLDivElement>(null);
   const lightFrame = useRef<number | null>(null);
   const imageSrc = `${process.env.NEXT_PUBLIC_BASE_PATH || ''}${shot.src}`;
-  const artwork = { '--screen-art': `url("${imageSrc}")` } as CSSProperties;
+  const artwork = {
+    '--screen-art': `url("${imageSrc}")`,
+    ...(shot.width && shot.height ? { '--screen-ratio': `${shot.width} / ${shot.height}` } : {}),
+  } as CSSProperties;
 
   useEffect(() => () => {
     if (lightFrame.current !== null) cancelAnimationFrame(lightFrame.current);
@@ -141,8 +150,8 @@ function Screen({
               className="screen-image"
               alt={shot.title}
               src={imageSrc}
-              width={520}
-              height={925}
+              width={shot.width ?? 520}
+              height={shot.height ?? 925}
               loading={eager ? 'eager' : 'lazy'}
               decoding="async"
             />
@@ -225,6 +234,17 @@ export default function Home() {
           <h2 id="other-title">其他界面</h2>
           <div className="other-screens">
             {[screens.ranking, screens.subscription, screens.mail, screens.reward].map((shot) => (
+              <Screen key={shot.src} shot={shot} />
+            ))}
+          </div>
+        </section>
+
+        <section className="game-section" aria-labelledby="werewolf-title">
+          <header className="masthead">
+            <h2 className="game-title" id="werewolf-title">狼人杀</h2>
+          </header>
+          <div className="werewolf-screens">
+            {werewolfScreens.map((shot) => (
               <Screen key={shot.src} shot={shot} />
             ))}
           </div>

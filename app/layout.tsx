@@ -4,7 +4,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: profile.gameTitle,
-  description: `${profile.gameTitle}游戏界面展示。`,
+  description: `${profile.gameTitle}与狼人杀游戏界面展示。`,
 };
 
 export default function RootLayout({
